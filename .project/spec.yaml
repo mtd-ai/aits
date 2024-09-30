@@ -1,7 +1,7 @@
 specVersion: v2
 specMinorVersion: 1
 meta:
-  name: my-project
+  name: ai-assistant
   image: project-my-project
   description: AI Teaching Assistant
   labels: []

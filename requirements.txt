@@ -1,0 +1,15 @@
+jupyterlab>3.0
+
+langchain-chroma==0.1.4
+langchain-community
+langchain-openai==0.1.25
+langchain
+langgraph
+gradio==4.43.0
+transformers==4.44.2
+langchain_nvidia_ai_endpoints
+langchain-huggingface==0.0.3
+unstructured
+dataclass_wizard==0.22.2
+
+python-docx==1.1.2

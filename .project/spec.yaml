@@ -19,7 +19,7 @@ layout:
   storage: gitlfs
 - path: files/
   type: data
-  storage: gitlfs
+  storage: gitignore
 environment:
   base:
     registry: nvcr.io
@@ -42,7 +42,7 @@ environment:
       stop_command: pkill -f "^python3 -m chatui"
       user_msg: ""
       logfile_path: ""
-      timeout_seconds: 60
+      timeout_seconds: 0
       icon_url: ""
       webapp_options:
         autolaunch: true
@@ -103,7 +103,9 @@ execution:
     gpu:
       requested: 1
     sharedMemoryMB: 8192
-  secrets: []
+  secrets:
+  - variable: NVIDIA_API_KEY
+    description: NVIDIA API Key for accessing the API catalog
   mounts:
   - type: project
     target: /project/

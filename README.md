@@ -27,7 +27,7 @@ That's when inspiration struck. I came up with an idea to automate and accelerat
  - Step 2: Clone the github repository
  - Step 3: Wait for build (take some time)
  - Step 4: Enter your NVIDIA Catalog API Key as Secret
- - Step 5: Start the chat application!
+ - Step 5: Start the chat application! (If it didn't start the first time, try again at least 3 times)
  - Step 6: Follow the video for actions you can do!
 
 

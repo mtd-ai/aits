@@ -33,8 +33,6 @@ That's when inspiration struck. I came up with an idea to automate and accelerat
 
 ## Features
 
-  Checkout the [blogpost](BLOG.md) for technical details
-
 ### 1. Requirements - Assignments - Feedback RAG
 ![rag](static/requirement-assignment-feedback-rag.png)
 
@@ -54,6 +52,3 @@ That's when inspiration struck. I came up with an idea to automate and accelerat
 
   - Try different models!
   - Try changing prompts!
-
-## Blog post
-Checkout the blog post [here](BLOG.md)

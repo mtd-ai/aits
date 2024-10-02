@@ -1,0 +1,8 @@
+Football analysis report
+
+Student: Paul
+StudentID: 12345
+
+Football is my favorite sport. I deeply understand that good football tactic requires good data analysis. This report provides insight about analyzing atheletes' meals and eating habits. Nutrition is important for an athelete, therefore players with bad eating habits sometimes have bad mood in the match. They tend to make more mistake, and tend to underperform.
+
+To find more evidence, I implemented a machine learning model to predict players' health status based on their meals everyday. The data is provided by the team chef.

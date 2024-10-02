@@ -100,7 +100,7 @@ def get_retriever():
 
 ######## HANDLE ASSIGNMENT FILES ########
 def upload_assignment(file_path):
-
+    
     if file_path.endswith(".pdf"):
         doc = [item for item in PyPDFLoader(file_path).load()]
     elif file_path.endswith((".docx", ".doc")):

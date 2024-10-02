@@ -36,7 +36,7 @@ css = """
 
 def build_page() -> gr.Blocks:
 
-    chatLLM = localLlm.Phi3LLM(cache_dir=models_path)
+    chatLLM = localLlm.Phi3LLM(model_name=models_path)
     nim_choices = ["mistralai/mistral-7b-instruct-v0.3", "meta/llama3-8b-instruct", "nvidia/nemotron-mini-4b-instruct"]
     
     with gr.Blocks(title=TITLE, fill_height=True, css=css) as page:
@@ -117,7 +117,7 @@ def build_page() -> gr.Blocks:
                                         value="Upload",
                                         scale=1
                                     )
-                                    docs_clear_button = gr.ClearButton(
+                                    _ = gr.ClearButton(
                                         [docs_file], value="Clear", scale=1
                                     )
 
@@ -164,7 +164,8 @@ def build_page() -> gr.Blocks:
                                     label="Requirements Files",
                                     file_count='multiple',
                                     height="32vh",
-                                    ignore_glob="*.gitkeep"
+                                    ignore_glob="*.gitkeep",
+                                    value=[]
                                 )
                                 upload_requirements_delete_button = gr.Button(
                                     value="Delete selected files",
@@ -260,6 +261,7 @@ def build_page() -> gr.Blocks:
                                 height="30vh",
                                 ignore_glob="*.gitkeep"
                             )
+                        
                         with gr.Row():
                             docs_preview_button = gr.Button(
                                 value="Preview selected document file",
@@ -267,6 +269,7 @@ def build_page() -> gr.Blocks:
                             feedback_preview_button = gr.Button(
                                 value="Preview selected feedback file",
                             )
+                        
                         with gr.Row():
                             feedback_all_button = gr.Button(
                                 value="Feedback all selected files",
@@ -502,6 +505,7 @@ def build_page() -> gr.Blocks:
                         print("file1: ", file1, "file2: ", file2)
                         if os.path.samefile(file1, file2):
                             os.remove(file2)
+                            old_files.remove(file2)
                             break
 
             current_files = [os.path.join(truth_path, file_name) for file_name in os.listdir(truth_path) if file_name != ".gitkeep"]
@@ -691,12 +695,37 @@ def build_page() -> gr.Blocks:
                 root_dir=temp_path,
             )
 
+
+        def feedback_everything(method, auto_criteria, manual_criteria, mode, model):
+            llm = get_llm(mode, model)
+            if method == "Auto":
+                criterias = auto_criteria
+            else:
+                criterias = manual_criteria
+
+            all_assignments = [os.path.join(docs_path, fp) for fp in os.listdir(docs_path)]
+            all_assignments = [fp for fp in all_assignments if not fp.endswith(".gitkeep")]
+            actions.create_all_feedback(criterias, all_assignments, llm)
+            return gr.FileExplorer(root_dir=temp_path, interactive=False)
+        
+        def delete_feedback_everything():
+            all_feedback = [os.path.join(feedback_path, fp) for fp in os.listdir(feedback_path)]
+            all_feedback = [fp for fp in all_feedback if not fp.endswith(".gitkeep")]
+            for file in all_feedback:
+                os.remove(file)
+            return gr.FileExplorer(
+                root_dir=temp_path,
+            )
+
         marking_button.click(assess_assignment, inputs=[criteria_method, auto_criterias_group, manual_criterias_group, docs_file_explorer, feedback_llm_dropdown, feedback_nim_dropdown], outputs=[marking_output, feedback_llm_dropdown, feedback_nim_dropdown])
         docs_preview_button.click(preview_assignment, inputs=[docs_file_explorer, preview_window], outputs=[preview_window])
         feedback_all_button.click(feedback_all_files, inputs=[criteria_method, auto_criterias_group, manual_criterias_group, docs_file_explorer, feedback_llm_dropdown, feedback_nim_dropdown], outputs=[feedback_explorer]).then(reset_feedback_explorer, inputs=[], outputs=[feedback_explorer])
         feedback_preview_button.click(preview_feedback, inputs=[feedback_explorer, preview_window], outputs=[preview_window, feedback_window])
         feedback_delete_button.click(delete_feedback, inputs=[feedback_explorer], outputs=[feedback_explorer]).then(reset_feedback_explorer, inputs=[], outputs=[feedback_explorer]).then(reset_feedback_explorer, inputs=[], outputs=[feedback_explorer])
 
+        feedback_everything_button.click(feedback_everything, inputs=[criteria_method, auto_criterias_group, manual_criterias_group, feedback_llm_dropdown, feedback_nim_dropdown], outputs=[feedback_explorer]).then(reset_feedback_explorer, inputs=[], outputs=[feedback_explorer])
+
+        feedback_delete_everything_button.click(delete_feedback_everything, inputs=[], outputs=[feedback_explorer]).then(reset_feedback_explorer, inputs=[], outputs=[feedback_explorer])
         ### SUMMARY TAB EVENTS
         def summarize_assignment(file_path, mode, model):
             llm = get_llm(mode, model)

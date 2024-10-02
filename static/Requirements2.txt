@@ -1,0 +1,3 @@
+To score an excellent mark, students have to do 1 of the following extensions:
+Implement a ML technique to analyze the footbal data.
+Implement a vision technique to analyze the footbal data.

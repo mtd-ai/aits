@@ -3,11 +3,10 @@ from typing import List
 
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
-from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
-from langchain_community.document_loaders import UnstructuredWordDocumentLoader, PyPDFLoader, TextLoader, Docx2txtLoader
+from langchain_community.document_loaders import UnstructuredWordDocumentLoader, PyPDFLoader, TextLoader
 
-from chatui.utils import database, nim, localLlm
+from chatui.utils import database
 
 from chatui.prompts import prompts_common, prompts_phi3
 from langchain.text_splitter import RecursiveCharacterTextSplitter

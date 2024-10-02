@@ -1,0 +1,7 @@
+This is the Requirement Specification for Project Football Analysis
+
+Students have to write a report about how football analysis affects the performance of a team. In football, there are many strategies that can only be executed with the help of data analysis. The report should include:
+A unique data analysis technique that ultilizes data of individual players
+A unique data analysis technique that ultilizes data of the whole team
+
+The report should be written in English, clear and precise. The report should be at least 500 words long.

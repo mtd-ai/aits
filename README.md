@@ -13,11 +13,13 @@ Users can focus on streamline their workflow, while NVIDIA AI Workbench automati
 
 ## Background & Inspiration
 
-Recently, it took **five weeks** for my assignment to be graded, sparking a wave of complaint emails from fellow students. Instead of addressing each one individually, the graders posted a brief announcement to ease the tension. After some asking, I discovered that over **350 submissions** had been manually graded by just two graders—one of whom was part-time! Clearly, this wasn’t sustainable.
+Recently, it took **five weeks** for my assignment to be graded, sparking a wave of complaint emails from fellow students. Instead of addressing each one individually, the graders posted a brief announcement to ease the tension. After some asking, I discovered that over **350 submissions** had been manually graded by just two graders, one of whom was part-time! Clearly, this wasn’t sustainable.
 
 That's when inspiration struck. I came up with an idea to automate and accelerate the grading process. Over time, I expanded the concept, realizing its potential to be applied across multiple domains.
 
 ## Testing instruction
+
+  Download the txt files in static folder.
 
   Most of the instructions are included in the video, please check it out [here](https://youtu.be/yNRyyJulyBU)
 
@@ -26,6 +28,7 @@ That's when inspiration struck. I came up with an idea to automate and accelerat
  - Step 3: Wait for build (take some time)
  - Step 4: Enter your NVIDIA Catalog API Key as Secret
  - Step 5: Start the chat application!
+ - Step 6: Follow the video for actions you can do!
 
 
 ## Features

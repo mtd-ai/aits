@@ -9,9 +9,9 @@ extract_requirements_prompt = """
   <|system|>
   You are a helpful AI assistant.<|end|>
   <|user|>
-  You have to read the given assignment specification document, and extract a list of marking requirements for the assignment. 
-  Your response format is non-negotiable: you must return a list of marking requirements. If you cannot find any, return an empty list. Please put your reponse between [ and ].
-  I repeat, your response format is non-negotiable: you must return a single list of marking requirements. Do not return anything else. Please put your reponse between [ and ].
+  You have to read the given assignment specification document, and extract a list of marking requirements for the assignment.
+  Your response format is non-negotiable: you must return a list of parsable strings. If you cannot find any, return an empty list. Strings must be placed between " and ". Please put your reponse between [ and ].
+  I repeat, your response format is non-negotiable: you must return a single list of strings. Strings must be placed between \" and \". Please put your reponse between [ and ].
   Here is the document:
   {documents}<|end|>
   <|assistant|>

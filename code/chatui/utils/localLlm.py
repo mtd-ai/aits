@@ -20,8 +20,8 @@ class Phi3LLM(LLM):
 
     def __init__(self, model_name: str = "microsoft/Phi-3-mini-4k-instruct", cache_dir="/", *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
-        self.model = AutoModelForCausalLM.from_pretrained(model_name, cache_dir=cache_dir)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.model = AutoModelForCausalLM.from_pretrained(model_name)
         if torch.cuda.is_available():
             self.device = torch.device("cuda")  
         elif torch.backends.mps.is_available():

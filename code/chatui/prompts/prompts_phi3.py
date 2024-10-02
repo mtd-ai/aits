@@ -1,10 +1,10 @@
 
-
+# Retrieve requirements from vector store
 retrieve_requirements_prompt = """
   What are the specification, requirements, criteria, and marking scheme for this assignment?
 """
 
-
+# Get requirements from retrieved related requirements chunk
 extract_requirements_prompt = """
   <|system|>
   You are a helpful AI assistant.<|end|>
@@ -17,6 +17,7 @@ extract_requirements_prompt = """
   <|assistant|>
 """
 
+# Extract list of requirements from documents
 extract_requirements_prompt_multiple = """
   <|system|>
   You are a helpful AI assistant.<|end|>
@@ -29,13 +30,7 @@ extract_requirements_prompt_multiple = """
   <|assistant|>
 """
 
-mark_requirements_prompt = """
-  <|system|>
-  You are a helpful AI assistant.<|end|>
-  <|user|>
-  You are given a list of marking requirements. You have to read the given student's assignment and give an integer score between 1 to 10 for each marking requirements.
-"""
-
+# Summarization prompts. Recursive approach
 first_summarize_prompt = """
   <|system|>
   You are a helpful AI assistant for summarization task.<|end|>
@@ -47,7 +42,6 @@ first_summarize_prompt = """
   {document}<|end|>
   <|assistant|>
 """
-
 
 next_summarize_prompt = """
   <|system|>
@@ -63,20 +57,7 @@ next_summarize_prompt = """
   <|assistant|>
 """
 
-#feedback_prompt = """
-"""
-  <|system|>
-  You are a helpful AI assistant.<|end|>
-  <|user|>
-  You are given a marking requirements and a student's assignment. You have to read the student's assignment, give feedback, and assign a score to the student assignment based on the marking requirements. If the assignment isn't related to the marking requirement at all or demonstrates poor understanding of the marking requirements, you should score it 1. If the assignment satisfies the marking requirement and provides further information about the marking requirement topic, you should score it 10. Your response format is non-negotiable: you must return a list of JSON objects, each has 3 keys: 'requirement', 'feedback' and 'score'. The 'requirement' and 'feedback' values are strings, the 'score' value is an integer.
-  Here is the marking criteria:
-  {criteria}
-  Here is the student's assignment:
-  {document}<|end|>
-  <|assistant|>
-"""
-
-
+# Feedback prompt
 feedback_prompt = """
   <|system|>
   You are an insightful and detail-oriented AI assistant.<|end|>
@@ -102,6 +83,7 @@ feedback_prompt = """
   <|assistant|>
 """
 
+# Read email and find related files
 find_related_files_from_email_prompt = """
   <|system|>
   You are a helpful AI assistant.<|end|>
@@ -123,5 +105,18 @@ find_related_files_from_emails_prompt = """
   {emails}
   Here is the list of files:
   {files}<|end|>
+  <|assistant|>
+"""
+
+
+generate_response_email_prompt = """
+  <|system|>
+  You are a helpful AI assistant who write response emails to students.<|end|>
+  <|user|>
+  You are given an email from a student and a feedback draft. You have to format the feedback into a response email to the student. Your response format is non-negotiable: you must return a string. Do not add any additional information. Do not remove any information.
+  Here is the student's email:
+  {email}
+  Here is the feedback draft:
+  {feedback}<|end|>
   <|assistant|>
 """

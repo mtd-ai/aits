@@ -164,7 +164,9 @@ def get_text_from_file(file_path):
         doc = [item.page_content for item in PyPDFLoader(file_path).load()]
         doc = "\n".join(doc)
     elif file_path.endswith((".docx", ".doc")):
-        doc = UnstructuredWordDocumentLoader(file_path, mode='single').load()[0].page_content
+        doc = UnstructuredWordDocumentLoader(file_path, mode='single').load()
+        doc = [item.page_content for item in doc]
+        doc = "\n".join(doc)
     elif file_path.endswith(".txt"):
         doc = [item.page_content for item in TextLoader(file_path).load()]
         doc = "\n".join(doc)
@@ -191,3 +193,12 @@ def find_related_files_from_email(email, files, llm):
     related_files = response['related_files']
     return result, related_files
 
+
+def generate_response_email(email, response, llm):
+    prompt = PromptTemplate(
+        template=prompts_phi3.generate_response_email_prompt,
+        input_variables=["email", "feedback"],
+    )
+    chain = prompt | llm | StrOutputParser()
+    response = chain.invoke({"email": email, "feedback": response})
+    return response

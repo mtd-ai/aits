@@ -11,27 +11,25 @@ import shutil
 from chatui.utils import actions
 import os
 
-TITLE = "Teaching Assistant Chatbot"
+TITLE = "AI Academic Feedback Assistant"
 OUTPUT_TOKENS = 250
 MAX_DOCS = 5
 
-TITLE = "Teaching Assistant Chatbot"
 current_file_path = os.path.dirname(__file__)
 root = os.path.join(current_file_path, "../../../")
 docs_path = os.path.join(root, "files", "docs")
 truth_path = os.path.join(root, "files", "truth")
 temp_path = os.path.join(root, "files", "temp")
 feedback_path = os.path.join(root, "files", "feedback")
-#models_path = os.path.join(root, "models/models--microsoft--Phi-3-mini-4k-instruct")
-models_path = os.path.join(root, "models")
+#models_path = os.path.join(root, "models")
 
-
+models_path = "/"
 
 css = """
-    .preview {height: 55vh !important; overflow-y: scroll !important};
+    .preview {height: 45vh !important; overflow-y: scroll !important};
     .email-result {height: 30vh !important; overflow: scroll !important;};
     .feedback {height: 320px !important; overflow: scroll !important; max-height: 320px !important};
-    .feedback-child {height: 100% !important};
+    .feedback-child {height: 35vh !important};
     .half-screen {height: 320px !important; overflow-y: scroll !important};
     .radio-group {height: 200px !important; max-height: 200px !important; overflow-y: scroll !important};
 """
@@ -70,10 +68,10 @@ def build_page() -> gr.Blocks:
                 )
 
                 with gr.Tabs(selected=0, elem_classes=["feedback"]) as feedback_tabs:
-                    with gr.TabItem("Comments", elem_classes=["feedback"]):
+                    with gr.TabItem("Feedback", elem_classes=["feedback"]):
                         feedback_window = gr.Textbox(
                             interactive=True,
-                            label="Comments",
+                            label="Feedback",
                             elem_classes=["feedback"]
                         )
                             
@@ -83,8 +81,16 @@ def build_page() -> gr.Blocks:
                             label="Auto Generate Feedback Email",
                             elem_classes=["feedback-child"]
                         )
-                        generate = gr.Button(
+                        generate_email_button = gr.Button(
                             value="Start Generate Feedback",
+                        )
+                    with gr.TabItem("Comment"):
+                        comment_textbox = gr.Textbox(
+                            interactive=True,
+                            label="Write your comment",
+                        )
+                        comment_save_button = gr.Button(
+                            value="Save comment",
                         )
 
             ### ACTIONS COLUMN ###
@@ -187,7 +193,8 @@ def build_page() -> gr.Blocks:
                                     interactive=False,
                                     label="Uploaded documents",
                                     root_dir=truth_path,
-                                    ignore_glob="*.gitkeep"
+                                    ignore_glob="*.gitkeep",
+                                    value=[]
                                 )
 
                             # Manually input criterias tab
@@ -234,6 +241,7 @@ def build_page() -> gr.Blocks:
                                 value="Generate Feedback",
                                 scale =2,
                             )
+
                         with gr.Row():
                             docs_file_explorer = gr.FileExplorer(
                                 root_dir=docs_path,
@@ -267,6 +275,13 @@ def build_page() -> gr.Blocks:
                                 value="Delete selected feedback files",
                             )
                         
+                        with gr.Row():
+                            feedback_everything_button = gr.Button(
+                                value="Feedback all files",
+                            )
+                            feedback_delete_everything_button = gr.Button(
+                                value="Delete all feedback files",
+                            )
                     with gr.TabItem("Summary"):
                         gr.Markdown("## Summary assignment here (It might take a while)")
 
@@ -276,6 +291,7 @@ def build_page() -> gr.Blocks:
                             root_dir=docs_path,
                             label="Choose a file to summarize",
                             ignore_glob="*.gitkeep",
+                            height="30vh"
                         )
                         with gr.Column():
                             assignment_summary = gr.Textbox(
@@ -289,69 +305,55 @@ def build_page() -> gr.Blocks:
 
                     with gr.TabItem("Email"):
                         gr.Markdown("## Resolve student email here")
-                        with gr.Tabs(selected=0):
-                            with gr.TabItem("Manually", elem_classes=["radio-group"]):
-                                manual_email_textbox = gr.Textbox(
-                                    label="Email content",
-                                    placeholder="Enter email content",
-                                    container=False,
-                                    interactive=True,
-                                    elem_classes=["email-result"],
-                                    max_lines=12
-                                )
+                        #with gr.Tabs(selected=0):
+                            #with gr.TabItem("Manually", elem_classes=["radio-group"]):
+                        manual_email_textbox = gr.Textbox(
+                            label="Email content",
+                            placeholder="Enter email content",
+                            container=False,
+                            interactive=True,
+                            elem_classes=["email-result"],
+                            max_lines=12
+                        )
                                 
 
-                                with gr.Row(equal_height=True):
-                                    email_input_type = gr.Dropdown(
-                                        label="Email input type",
-                                        choices=["Single", "Multiple"],
-                                        interactive=True,
-                                        value="Single"
-                                    )
-                                    find_related_files_button = gr.Button(
-                                        value="Find related files",
-                                    )
-                                    email_content_clear = gr.ClearButton(
-                                        [manual_email_textbox], value="Clear email"
-                                    )
+                        with gr.Row(equal_height=True):
+                            email_input_type = gr.Dropdown(
+                                label="Email input type",
+                                choices=["Single", "Multiple"],
+                                interactive=True,
+                                value="Single"
+                            )
+                            find_related_files_button = gr.Button(
+                                value="Find related files",
+                            )
+                            email_content_clear = gr.ClearButton(
+                                [manual_email_textbox], value="Clear email"
+                            )
 
-                                with gr.Row(elem_classes=["radio-group"]):
-                                    with gr.Column():
-                                        _ = gr.Markdown(
-                                            label="Result",
-                                            value="Email content are displayed here",
-                                            height="30vh"
-                                        )
-                                        manual_email_result_markdown= gr.Markdown(
-                                            label="Result",
-                                        )
-                                    with gr.Group(elem_classes=["radio-group"]):
-                                        manual_email_related_files_radio = gr.Radio(
-                                            label="Related files",
-                                            choices=[
-                                                "Example longngnggnng choice to seee how it wraps",
-                                                "Example choice",
-                                                "Example choice alsjvasdf;j;a",
-                                                "Example choice dajfajd",
-                                                "Example choice",
-                                                "Example choice",
-                                                "Example choice",
-                                                "Example choice",
-                                                "Example choice",
-                                                "Example choice",
-                                                "Example choice",
-                                                "Example choice",
-                                                "Example choice",
-                                                "Example choice",
-                                                "Example choice",
-                                            ],
-                                            elem_classes=["radio-group"],
-                                        )
-                            with gr.TabItem("Via API"):
-                                api_email_markdown = gr.Markdown(
-                                    label="Email content",
-                                    value="Email content are displayed here"
+                        with gr.Row(elem_classes=["radio-group"]):
+                            with gr.Column():
+                                _ = gr.Markdown(
+                                    label="Result",
+                                    value="Email content are displayed here",
+                                    height="30vh"
                                 )
+                                manual_email_result_markdown= gr.Markdown(
+                                    label="Result",
+                                )
+                            with gr.Group(elem_classes=["radio-group"]):
+                                manual_email_related_files_radio = gr.Radio(
+                                    label="Related files",
+                                    choices=[
+                                        
+                                    ],
+                                    elem_classes=["radio-group"],
+                                )
+                            #with gr.TabItem("Via API"):
+                               # api_email_markdown = gr.Markdown(
+                                    #label="Email content",
+                                    #value="Email content are displayed here"
+                                #)
                     
                     with gr.TabItem("LLM"):
                         gr.Markdown ("## LLM Settings")
@@ -361,45 +363,53 @@ def build_page() -> gr.Blocks:
                                 requirements_llm_dropdown = gr.Dropdown(
                                     label="Requirements LLM mode",
                                     choices=["Local", "NVIDIA-hosted NIM"],
-                                    value="Local"
+                                    value="Local",
+                                    interactive=True
                                 )
                                 requirements_nim_dropdown = gr.Dropdown(
                                     label="NIM model (Only for NVIDIA-hosted LLM)",
                                     choices=nim_choices,
-                                    value="mistralai/mistral-7b-instruct-v0.3"
+                                    value="mistralai/mistral-7b-instruct-v0.3",
+                                    interactive=True
                                 )
                             with gr.Row():
                                 feedback_llm_dropdown = gr.Dropdown(
                                     label="Feedback LLM mode",
                                     choices=["Local", "NVIDIA-hosted NIM"],
-                                    value="Local"
+                                    value="Local",
+                                    interactive=True
                                 )
                                 feedback_nim_dropdown = gr.Dropdown(
                                     label="NIM model (Only for NVIDIA-hosted LLM)",
                                     choices=nim_choices,
-                                    value="mistralai/mistral-7b-instruct-v0.3"
+                                    value="mistralai/mistral-7b-instruct-v0.3",
+                                    interactive=True
                                 )
                             with gr.Row():
                                 summary_llm_dropdown = gr.Dropdown(
                                     label="Summary LLM mode",
                                     choices=["Local", "NVIDIA-hosted NIM"],
-                                    value="Local"
+                                    value="Local",
+                                    interactive=True
                                 )
                                 summary_nim_dropdown = gr.Dropdown(
                                     label="NIM model (Only for NVIDIA-hosted LLM)",
                                     choices=nim_choices,
-                                    value="mistralai/mistral-7b-instruct-v0.3"
+                                    value="mistralai/mistral-7b-instruct-v0.3",
+                                    interactive=True
                                 )
                             with gr.Row():
                                 email_llm_dropdown = gr.Dropdown(
                                     label="Email LLM mode",
                                     choices=["Local", "NVIDIA-hosted NIM"],
-                                    value="Local"
+                                    value="Local",
+                                    interactive=True
                                 )
                                 email_nim_dropdown = gr.Dropdown(
                                     label="NIM model (Only for NVIDIA-hosted LLM)",
                                     choices=nim_choices,
-                                    value="mistralai/mistral-7b-instruct-v0.3"
+                                    value="mistralai/mistral-7b-instruct-v0.3",
+                                    interactive=True
                                 )
 
 
@@ -409,6 +419,7 @@ def build_page() -> gr.Blocks:
             else:
                 return ChatNVIDIA(model=model)
             
+        ### UPLOAD TAB EVENTS ###
         # Assignment files
         def upload_docs(files):
             if files:
@@ -611,22 +622,44 @@ def build_page() -> gr.Blocks:
 
         def preview_feedback(file_path, current_text):
             print(file_path)
+            all_assignments = os.listdir(docs_path)
             if type(file_path) == list and len(file_path) >0 and type(file_path[0]) == str:
                 print("isfile")
-                text = actions.get_text_from_file(file_path[0])
+                file = file_path[0]
+                for f in all_assignments:
+                    if f.startswith(file):
+                        file = f
+                        break
+                file_name = os.path.basename(file).split('/')[-1].split('.')[0]
+                assignment_path = None
+                for f in all_assignments:
+                    if f.startswith(file_name):
+                        assignment_path = f
+                        break
+                assignment_path = os.path.join(docs_path, assignment_path)
+                feedback_text = actions.get_text_from_file(file)
+                assignment_text = ""
+                if assignment_path:
+                    assignment_text = actions.get_text_from_file(assignment_path)
                 return gr.HighlightedText(
-                    value=[(text, None)],
+                    value=[(assignment_text, None)],
                     label="Document Preview",
                     interactive=False,
                     scale=10,
-                    elem_classes=["preview"])
+                    elem_classes=["preview"]
+                ), gr.Textbox(
+                    value=feedback_text,
+                    label="Feedback",
+                    interactive=True,
+                    elem_classes=["feedback"]
+                )
             return gr.HighlightedText(
                     value=current_text,
                     label="Document Preview",
                     interactive=False,
                     scale=10,
                     elem_classes=["preview"]
-                )
+                ), ""
         
         def feedback_all_files(method, auto_criteria, manual_criteria, files, mode, model):
             llm = get_llm(mode, model)
@@ -650,7 +683,6 @@ def build_page() -> gr.Blocks:
                 value=[]
             )
             
-
         def delete_feedback(files):
             if files:
                 for file in files:
@@ -662,7 +694,7 @@ def build_page() -> gr.Blocks:
         marking_button.click(assess_assignment, inputs=[criteria_method, auto_criterias_group, manual_criterias_group, docs_file_explorer, feedback_llm_dropdown, feedback_nim_dropdown], outputs=[marking_output, feedback_llm_dropdown, feedback_nim_dropdown])
         docs_preview_button.click(preview_assignment, inputs=[docs_file_explorer, preview_window], outputs=[preview_window])
         feedback_all_button.click(feedback_all_files, inputs=[criteria_method, auto_criterias_group, manual_criterias_group, docs_file_explorer, feedback_llm_dropdown, feedback_nim_dropdown], outputs=[feedback_explorer]).then(reset_feedback_explorer, inputs=[], outputs=[feedback_explorer])
-        feedback_preview_button.click(preview_feedback, inputs=[feedback_explorer, preview_window], outputs=[preview_window])
+        feedback_preview_button.click(preview_feedback, inputs=[feedback_explorer, preview_window], outputs=[preview_window, feedback_window])
         feedback_delete_button.click(delete_feedback, inputs=[feedback_explorer], outputs=[feedback_explorer]).then(reset_feedback_explorer, inputs=[], outputs=[feedback_explorer]).then(reset_feedback_explorer, inputs=[], outputs=[feedback_explorer])
 
         ### SUMMARY TAB EVENTS
@@ -681,11 +713,12 @@ def build_page() -> gr.Blocks:
             return (response)
         #email_infer.click(infer_email, inputs=[manual_email_textbox], outputs=[manual_email_result_textbox])
 
-        def find_related_files(email):
+        def find_related_files(email, mode, model):
             assignment_files = os.listdir(docs_path)
             truth_files = os.listdir(truth_path)
             f = assignment_files + truth_files
-            markdown, related_files = actions.find_related_files_from_email(email, f, chatLLM)
+            llm = get_llm(mode, model)
+            markdown, related_files = actions.find_related_files_from_email(email, f, llm)
             print(related_files)
             return markdown, gr.Radio(
                 label="Related files",
@@ -699,8 +732,22 @@ def build_page() -> gr.Blocks:
                 text = actions.get_text_from_file(path)
                 return [(text, None)]
 
-        find_related_files_button.click(find_related_files, inputs=[manual_email_textbox], outputs=[manual_email_result_markdown, manual_email_related_files_radio])
+        def generate_feedback_email(email, comments, mode, model):
+            if not comments or len(comments) == 0:
+                return ""
+            if not email or len(email) == 0:
+                return ""
+            llm = get_llm(mode, model)
+
+
+            response = actions.generate_response_email(email, comments, llm)
+            return response
+
+
+        find_related_files_button.click(find_related_files, inputs=[manual_email_textbox, email_llm_dropdown, email_nim_dropdown], outputs=[manual_email_result_markdown, manual_email_related_files_radio])
         manual_email_related_files_radio.input(show_file_content, inputs=[manual_email_related_files_radio], outputs=[preview_window])
+
+        generate_email_button.click(generate_feedback_email, inputs=[manual_email_textbox, comment_textbox, email_llm_dropdown, email_nim_dropdown], outputs=[feedback_text])
 
     page.queue()
     return page

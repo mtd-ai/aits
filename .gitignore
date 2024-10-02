@@ -62,6 +62,10 @@ files/temp/*
 !files/temp/.gitkeep
 files/truth/*
 !files/truth/.gitkeep
+files/feedback/*
+!files/feedback/.gitkeep
+files/response/*
+!files/response/.gitkeep
 
 models/*
 !models/.gitkeep

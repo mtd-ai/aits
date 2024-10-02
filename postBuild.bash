@@ -5,4 +5,4 @@
 # Note: This file may be removed if you don't need to use it
 sudo -E apt-get update && sudo -E apt-get install ffmpeg libsm6 libxext6 -y
 
-#git clone https://huggingface.co/microsoft/Phi-3-mini-4k-instruct /models
+cd / && sudo git clone https://huggingface.co/microsoft/Phi-3-mini-4k-instruct

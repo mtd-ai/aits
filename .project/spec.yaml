@@ -102,7 +102,7 @@ execution:
   resources:
     gpu:
       requested: 1
-    sharedMemoryMB: 8192
+    sharedMemoryMB: 16384
   secrets:
   - variable: NVIDIA_API_KEY
     description: NVIDIA API Key for accessing the API catalog

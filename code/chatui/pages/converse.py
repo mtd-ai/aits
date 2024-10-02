@@ -4,10 +4,12 @@ import gradio as gr
 
 from chatui.utils import database
 from chatui.utils import localLlm
+from langchain_nvidia_ai_endpoints import ChatNVIDIA
 import os
 import shutil
 
 from chatui.utils import actions
+import os
 
 TITLE = "Teaching Assistant Chatbot"
 OUTPUT_TOKENS = 250
@@ -19,6 +21,7 @@ root = os.path.join(current_file_path, "../../../")
 docs_path = os.path.join(root, "files", "docs")
 truth_path = os.path.join(root, "files", "truth")
 temp_path = os.path.join(root, "files", "temp")
+feedback_path = os.path.join(root, "files", "feedback")
 #models_path = os.path.join(root, "models/models--microsoft--Phi-3-mini-4k-instruct")
 models_path = os.path.join(root, "models")
 
@@ -29,20 +32,30 @@ css = """
     .email-result {height: 30vh !important; overflow: scroll !important;};
     .feedback {height: 320px !important; overflow: scroll !important; max-height: 320px !important};
     .feedback-child {height: 100% !important};
-    .half-screen {height: 40vh !important; overflow-y: scroll !important};
-    .svelte-1kzox3m {height: 320px !important; overflow-y: scroll !important};
+    .half-screen {height: 320px !important; overflow-y: scroll !important};
     .radio-group {height: 200px !important; max-height: 200px !important; overflow-y: scroll !important};
 """
 
 def build_page() -> gr.Blocks:
 
     chatLLM = localLlm.Phi3LLM(cache_dir=models_path)
-    requirements_nim = gr.State("mistralai/mistral-7b-instruct-v0.2")
-    feedback_nim = gr.State("mistralai/mistral-7b-instruct-v0.2")
-    summary_nim = gr.State("mistralai/mistral-7b-instruct-v0.2")
+    nim_choices = ["mistralai/mistral-7b-instruct-v0.3", "meta/llama3-8b-instruct", "nvidia/nemotron-mini-4b-instruct"]
     
     with gr.Blocks(title=TITLE, fill_height=True, css=css) as page:
-        gr.Markdown(f"# {TITLE}")
+
+        with gr.Row():
+            gr.Markdown(f"# {TITLE}")
+            gr.Image(
+                height=64,
+                width=64,
+                value=os.path.join(root, "static", "logo.png"), 
+                scale=0.1, 
+                container=False,
+                show_download_button=False,
+                show_fullscreen_button=False,
+            )
+        auto_criterias_choices = gr.State([])
+        manual_criterias_choices = gr.State([])
 
         
         with gr.Row(equal_height=False):
@@ -57,21 +70,21 @@ def build_page() -> gr.Blocks:
                 )
 
                 with gr.Tabs(selected=0, elem_classes=["feedback"]) as feedback_tabs:
-                    with gr.TabItem("Feedback", elem_classes=["feedback"]):
+                    with gr.TabItem("Comments", elem_classes=["feedback"]):
                         feedback_window = gr.Textbox(
                             interactive=True,
-                            label="Feedback & Comments",
+                            label="Comments",
                             elem_classes=["feedback"]
                         )
                             
                     with gr.TabItem("Generate", elem_classes=["feedback-child"]):
                         feedback_text = gr.Textbox(
                             interactive=True,
-                            label="Generated Feedback Email",
+                            label="Auto Generate Feedback Email",
                             elem_classes=["feedback-child"]
                         )
                         generate = gr.Button(
-                            value="Generate Feedback",
+                            value="Start Generate Feedback",
                         )
 
             ### ACTIONS COLUMN ###
@@ -80,7 +93,7 @@ def build_page() -> gr.Blocks:
 
                     ### UPLOAD DOCUMENTS TAB ###
                     with gr.TabItem("Upload"):
-                        gr.Markdown("## Upload Documents Here")
+                        
                         ### Assignments row
                         with gr.Row():
                             # Assignments file upload
@@ -133,8 +146,10 @@ def build_page() -> gr.Blocks:
                                         value="Upload",
                                         scale=1
                                     )
-                                    upload_clear_requirements_button = gr.ClearButton(
-                                        [docs_file], value="Clear", scale=1
+                                    _ = gr.ClearButton(
+                                        [upload_requirements_file], 
+                                        value="Clear", 
+                                        scale=1
                                     )
                             with gr.Column():
                                 upload_requirements_explorer = gr.FileExplorer(
@@ -149,51 +164,55 @@ def build_page() -> gr.Blocks:
                                     value="Delete selected files",
                                 )
 
-                    with gr.TabItem("Criteria"):
-                        gr.Markdown("## Set requirements here")
+                    with gr.TabItem("Requirements"):
+                        gr.Markdown("## Manage your requirements")
+                            
                         with gr.Tabs(selected=0) as method_tab:
 
                             # Auto handle criterias tab
                             with gr.TabItem("Auto"):
                                 auto_criterias_group = gr.CheckboxGroup(
                                     interactive=True,
-                                    label="No criterias found. Please upload the relevant documents",
-                                    choices=[]
+                                    label="No requirements found. Please upload the relevant documents",
+                                    choices=[],
+                                    value=[]
                                 )
                                 auto_find_criteria_button = gr.Button(
-                                    value="Start finding criteria (Make sure you have uploaded the relevant documents)"
+                                    value="Start finding requirements (Make sure you have uploaded the relevant documents)"
                                 )
                                 auto_delete_criteria_button = gr.Button(
-                                    value="Delete the selected criterias"
+                                    value="Delete the selected requirements"
                                 )
-                                truth_file = gr.File(
-                                    interactive=True,
-                                    label="Evalutation criteria documents",
-                                    file_types=[".pdf", ".docx", ".doc", ".txt"],
-                                    file_count="multiple"
+                                auto_criteria_explorer = gr.FileExplorer(
+                                    interactive=False,
+                                    label="Uploaded documents",
+                                    root_dir=truth_path,
+                                    ignore_glob="*.gitkeep"
                                 )
 
                             # Manually input criterias tab
                             with gr.TabItem("Manual"):
                                 
                                 manual_criterias_group = gr.CheckboxGroup(
-                                    label="Choose the criterias you want to assess",
-                                    choices=[]
+                                    label="Choose the requirements you want to assess",
+                                    choices=[],
+                                    value=[],
+                                    elem_classes=["half-screen"],
                                 )
                                 manual_delete_criteria_button = gr.Button(
-                                    value="Delete selected criterias"
+                                    value="Delete selected requirements"
                                 )
                                 manual_add_criteria_textbox = gr.Textbox(
                                     interactive=True,
-                                    label="Type in a criteria and press Enter",
+                                    label="Type in a requirement and press Enter",
                                     placeholder="Enter criteria"
                                 )
                             
-                    with gr.TabItem("Marking"):
+                    with gr.TabItem("Feedback"):
                         gr.Markdown("## Assess students' assignments here")
                         
                         marking_output = gr.Textbox(
-                            label="Marking output",
+                            label="Feedback output",
                             interactive=True,
                             scale=4,
                             show_copy_button=True,
@@ -202,7 +221,7 @@ def build_page() -> gr.Blocks:
 
                         with gr.Row():
                             _ = gr.Markdown(
-                                value= "#### Criteria Source:")
+                                value= "#### Requirement Source:")
                             criteria_method = gr.Radio(
                                 choices=["Auto", "Manual"], 
                                 interactive=True,
@@ -212,27 +231,52 @@ def build_page() -> gr.Blocks:
                                 container=False
                             )
                             marking_button = gr.Button(
-                                value="Start Assessment",
+                                value="Generate Feedback",
                                 scale =2,
                             )
-                        docs_file_explorer = gr.FileExplorer(
-                            root_dir=docs_path,
-                            label="Assignment Files",
-                            file_count='single',
-                            scale=2,
-                            height="30vh",
-                            ignore_glob="*.gitkeep"
-                        )
+                        with gr.Row():
+                            docs_file_explorer = gr.FileExplorer(
+                                root_dir=docs_path,
+                                label="Please choose a file to feedback",
+                                file_count='multiple',
+                                scale=2,
+                                height="30vh",
+                                ignore_glob="*.gitkeep"
+                            )
+                            feedback_explorer = gr.FileExplorer(
+                                interactive=True,
+                                root_dir=feedback_path,
+                                label="Feedback Files",
+                                file_count='multiple',
+                                scale=2,
+                                height="30vh",
+                                ignore_glob="*.gitkeep"
+                            )
                         with gr.Row():
                             docs_preview_button = gr.Button(
-                                value="Preview selected file",
+                                value="Preview selected document file",
                             )
-                            docs_delete_button = gr.Button(
-                                value="Delete selected files",
+                            feedback_preview_button = gr.Button(
+                                value="Preview selected feedback file",
+                            )
+                        with gr.Row():
+                            feedback_all_button = gr.Button(
+                                value="Feedback all selected files",
+                            )
+                            feedback_delete_button = gr.Button(
+                                value="Delete selected feedback files",
                             )
                         
                     with gr.TabItem("Summary"):
                         gr.Markdown("## Summary assignment here (It might take a while)")
+
+                        summary_explorer = gr.FileExplorer(
+                            interactive=True,
+                            file_count='single',
+                            root_dir=docs_path,
+                            label="Choose a file to summarize",
+                            ignore_glob="*.gitkeep",
+                        )
                         with gr.Column():
                             assignment_summary = gr.Textbox(
                                 label="Summary",
@@ -313,122 +357,193 @@ def build_page() -> gr.Blocks:
                         gr.Markdown ("## LLM Settings")
 
                         with gr.Column():
-                            extract_requirements_dropdown = gr.Dropdown(
-                                label="Extract Requirements LLM",
-                                choices=["Local", "NVIDIA-hosted NIM"],
-                            )
-                            feedback_dropdown = gr.Dropdown(
-                                label="Feedback LLM",
-                                choices=["Local", "NVIDIA-hosted NIM"],
-                            )
-                            summary_dropdown = gr.Dropdown(
-                                label="Summary LLM",
-                                choices=["Local", "NVIDIA-hosted NIM"],
-                            )
-                            email_dropdown = gr.Dropdown(
-                                label="Email LLM",
-                                choices=["Local", "NVIDIA-hosted NIM"],
-                            )
+                            with gr.Row():
+                                requirements_llm_dropdown = gr.Dropdown(
+                                    label="Requirements LLM mode",
+                                    choices=["Local", "NVIDIA-hosted NIM"],
+                                    value="Local"
+                                )
+                                requirements_nim_dropdown = gr.Dropdown(
+                                    label="NIM model (Only for NVIDIA-hosted LLM)",
+                                    choices=nim_choices,
+                                    value="mistralai/mistral-7b-instruct-v0.3"
+                                )
+                            with gr.Row():
+                                feedback_llm_dropdown = gr.Dropdown(
+                                    label="Feedback LLM mode",
+                                    choices=["Local", "NVIDIA-hosted NIM"],
+                                    value="Local"
+                                )
+                                feedback_nim_dropdown = gr.Dropdown(
+                                    label="NIM model (Only for NVIDIA-hosted LLM)",
+                                    choices=nim_choices,
+                                    value="mistralai/mistral-7b-instruct-v0.3"
+                                )
+                            with gr.Row():
+                                summary_llm_dropdown = gr.Dropdown(
+                                    label="Summary LLM mode",
+                                    choices=["Local", "NVIDIA-hosted NIM"],
+                                    value="Local"
+                                )
+                                summary_nim_dropdown = gr.Dropdown(
+                                    label="NIM model (Only for NVIDIA-hosted LLM)",
+                                    choices=nim_choices,
+                                    value="mistralai/mistral-7b-instruct-v0.3"
+                                )
+                            with gr.Row():
+                                email_llm_dropdown = gr.Dropdown(
+                                    label="Email LLM mode",
+                                    choices=["Local", "NVIDIA-hosted NIM"],
+                                    value="Local"
+                                )
+                                email_nim_dropdown = gr.Dropdown(
+                                    label="NIM model (Only for NVIDIA-hosted LLM)",
+                                    choices=nim_choices,
+                                    value="mistralai/mistral-7b-instruct-v0.3"
+                                )
 
-                    with gr.TabItem("Prompt"):
-                        gr.Markdown("## Prompt customization")
-                        with gr.Tabs():
-                            with gr.TabItem("Extract Requirements Prompt"):
-                                extract_requirements_textbox = gr.Textbox(
-                                    label="Extract Requirements Prompt",
-                                    interactive=True,
-                                    
-                                )
-                            with gr.TabItem("Feedback"):
-                                feedback_textbox = gr.Textbox(
-                                    label="Feedback Prompt",
-                                    interactive=True,
-                                )
-                            with gr.TabItem("Summary"):
-                                summary_textbox = gr.Textbox(
-                                    label="Summary Prompt",
-                                    interactive=True,
-                                )
-                            with gr.TabItem("Email"):
-                                email_textbox = gr.Textbox(
-                                    label="Email Prompt",
-                                    interactive=True,
 
-                                )
-
+        def get_llm(state, model):
+            if state == "Local":
+                return chatLLM
+            else:
+                return ChatNVIDIA(model=model)
+            
         # Assignment files
         def upload_docs(files):
             if files:
                 for file in files:
                     shutil.move(file.name, docs_path)
-            return gr.FileExplorer(root_dir=temp_path,
-                ignore_glob="*.gitkeep"), 
-            gr.FileExplorer(root_dir=temp_path,
-                ignore_glob="*.gitkeep"), None
+            return gr.FileExplorer(
+                root_dir=temp_path,
+                ignore_glob="*.gitkeep"
+            ), gr.FileExplorer(
+                root_dir=temp_path,
+                ignore_glob="*.gitkeep"
+            ), None
 
         def delete_docs(files):
             if files:
-                if (type(files) == list):
-                    for file in files:
-                        os.remove(file)  
-                else:
-                    os.remove(files)                  
-                return gr.FileExplorer(root_dir=temp_path,
-                                    ignore_glob="*.gitkeep"), gr.FileExplorer(root_dir=temp_path,
-                                    ignore_glob="*.gitkeep")
-            return docs_path, docs_path
+                for file in files:
+                    os.remove(file)                   
+            return gr.FileExplorer(
+                root_dir=temp_path,
+                ignore_glob="*.gitkeep"
+            ), gr.FileExplorer(
+                root_dir=temp_path,
+                ignore_glob="*.gitkeep"
+            )
         
         # Workaround for gr.FileExplorer not updating after file upload
         def delete_docs2(files, files2):
-            return gr.FileExplorer(root_dir=docs_path,
-                                    ignore_glob="*.gitkeep"), gr.FileExplorer(root_dir=docs_path,
-                                    ignore_glob="*.gitkeep")
+            return gr.FileExplorer(
+                interactive=True,
+                root_dir=docs_path,
+                label="Please choose a file to feedback",
+                file_count='multiple',
+                scale=2,
+                height="30vh",
+                ignore_glob="*.gitkeep",
+                value=[]
+            ), gr.FileExplorer(
+                interactive=True,
+                root_dir=docs_path,
+                label="Assignment Files",
+                file_count='multiple',
+                scale=1,
+                height="32vh",
+                ignore_glob="*.gitkeep",
+                value=[]
+            )
         
         docs_upload_button.click(upload_docs, inputs=[docs_file], outputs=[docs_file_explorer, upload_assignments_explorer, docs_file]).then(delete_docs2, inputs=[docs_file_explorer, upload_assignments_explorer], outputs=[docs_file_explorer, upload_assignments_explorer])
-        docs_delete_button.click(delete_docs, inputs=[docs_file_explorer], outputs=[docs_file_explorer, upload_assignments_explorer]).then(delete_docs2, inputs=[docs_file_explorer, upload_assignments_explorer], outputs=[docs_file_explorer, upload_assignments_explorer])
         upload_docs_delete_button.click(delete_docs, inputs=[upload_assignments_explorer], outputs=[docs_file_explorer, upload_assignments_explorer]).then(delete_docs2, inputs=[docs_file_explorer, upload_assignments_explorer], outputs=[docs_file_explorer, upload_assignments_explorer])
 
-        ### CRITERIA TAB EVENTS
         # Upload truth files
         def upload_truth(files):
+            current_files = [os.path.join(truth_path, file_name) for file_name in os.listdir(truth_path)]
+            new_files = []
             if files:
-                database.upload_files(files)
-                for file in files:
-                    shutil.move(file.name, truth_path)
-            return None, gr.FileExplorer(root_dir=truth_path, interactive=True,
-                                    ignore_glob="*.gitkeep")
+                for file1 in files:
+                    isnew = True
+                    for file2 in current_files:
+                        if os.path.samefile(file1, file2):
+                            isnew = False
+                    if isnew:
+                        new_path = shutil.move(file1, truth_path)
+                        new_files.append(new_path)
+                database.upload_files(new_files)
+            return None, gr.FileExplorer(
+                                    interactive=True,
+                                    root_dir=temp_path,
+                                ), gr.FileExplorer(
+                                    interactive=False,
+                                    root_dir=temp_path,
+                                )
         
+        # Delete truth files
         def clear_truth(files):
-            database.clear()
             if (files):
-                for file in files:
-                    os.remove(file)
+                database.clear()
+                old_files = [os.path.join(truth_path, file_name) for file_name in os.listdir(truth_path) if file_name != ".gitkeep"]
+                for file1 in files:
+                    for file2 in old_files:
+                        print("file1: ", file1, "file2: ", file2)
+                        if os.path.samefile(file1, file2):
+                            os.remove(file2)
+                            break
 
-            current_files = os.listdir(truth_path)
+            current_files = [os.path.join(truth_path, file_name) for file_name in os.listdir(truth_path) if file_name != ".gitkeep"]
             if len(current_files) != 0:
                 database.upload_files(current_files)
-            return None
+            return gr.FileExplorer(root_dir=temp_path, interactive=True), gr.FileExplorer(root_dir=temp_path, interactive=False)
 
-        upload_requirements_button.click(upload_truth, inputs=[upload_requirements_file], outputs=[upload_requirements_file, upload_requirements_explorer])
-        upload_requirements_delete_button.click(clear_truth, inputs=[truth_file], outputs=[truth_file])
+        # Workaround for gr.FileExplorer not updating after file upload
+        def reset_truth_explorer():
+            return gr.FileExplorer(
+                interactive=True,
+                root_dir=truth_path,
+                label="Requirements Files",
+                file_count='multiple',
+                height="32vh",
+                ignore_glob="*.gitkeep",
+                value=[]
+            ), gr.FileExplorer(
+                interactive=False,
+                root_dir=truth_path,
+                label="Uploaded Documents",
+                height="32vh",
+                ignore_glob="*.gitkeep",
+                value=[]
+            )
+        
+        upload_requirements_button.click(upload_truth, inputs=[upload_requirements_file], outputs=[upload_requirements_file, upload_requirements_explorer, auto_criteria_explorer]).then(reset_truth_explorer, inputs=[], outputs=[upload_requirements_explorer, auto_criteria_explorer])
+        upload_requirements_delete_button.click(clear_truth, inputs=[upload_requirements_explorer], outputs=[upload_requirements_explorer, auto_criteria_explorer]).then(reset_truth_explorer, inputs=[], outputs=[upload_requirements_explorer, auto_criteria_explorer])
 
+
+        ### CRITERIA TAB EVENTS ###
         # Auto infer criteria
-        def auto_infer_criteria():
+        def auto_infer_criteria(mode, model):
+            llm = get_llm(mode, model)
             documents = actions.retrieve_requirements()
-            criterias = actions.extract_requirements(documents, chatLLM)
+            criterias = actions.extract_requirements(documents, llm)
 
             if (type(criterias) == list):
                 if (len(criterias) == 0):
                     label= "No criterias found. Please upload the relevant documents."
                 else: 
                     label = "Choose the criterias to get feedback on!"
-                return gr.CheckboxGroup(label=label, choices=criterias, interactive=True)
+                return gr.CheckboxGroup(label=label, choices=criterias, value=[],interactive=True), criterias, mode, model
         
-        def auto_delete_criteria(values):
-            choices = auto_criterias_group.choices
+        def auto_delete_criteria(values, choices):
+
             if values:
                 for value in values:
+                    print(value)
+                    print(choices)
                     choices.remove(value)
+
+            print(type(choices))
 
             if (len(choices) == 0):
                 label= "No criterias found. Please upload the relevant documents."
@@ -437,48 +552,44 @@ def build_page() -> gr.Blocks:
             return gr.CheckboxGroup(
                 label=label,
                 choices=choices,
+                value=[],
                 interactive=True
-            )
+            ), choices
 
         # Manually criterias tab events handling
-        def manually_add_criteria(criteria):
-            choices = manual_criterias_group.choices
-            value = manual_criterias_group.value
+        def manually_add_criteria(criteria, values, choices):
             if criteria:
                 choices.append(criteria)
             return "", gr.CheckboxGroup(
                 label="Choose the criterias to get feedback on",
                 choices=choices,
-                value=value,
+                value=values,
                 interactive=True
-            )
+            ), choices
         
-        def manual_delete_criteria(values):
-            choices = manual_criterias_group.choices
+        def manual_delete_criteria(values, choices):
             if values:
                 for value in values:
                     choices.remove(value)
             return gr.CheckboxGroup(
                 label="Choose the criterias to get feedback on",
                 choices=choices,
+                value=[],
                 interactive=True
-            )
+            ), choices
             
-        auto_find_criteria_button.click(auto_infer_criteria, outputs=[auto_criterias_group])
-        auto_delete_criteria_button.click(auto_delete_criteria, inputs=[auto_criterias_group], outputs=[auto_criterias_group])
-        manual_add_criteria_textbox.submit(manually_add_criteria, inputs=[manual_add_criteria_textbox], outputs=[manual_add_criteria_textbox,manual_criterias_group])
-        manual_delete_criteria_button.click(manual_delete_criteria, inputs=[manual_criterias_group], outputs=[manual_criterias_group])
+        auto_find_criteria_button.click(auto_infer_criteria, inputs=[requirements_llm_dropdown, requirements_nim_dropdown], outputs=[auto_criterias_group, auto_criterias_choices, requirements_llm_dropdown, requirements_nim_dropdown])
+        auto_delete_criteria_button.click(auto_delete_criteria, inputs=[auto_criterias_group, auto_criterias_choices], outputs=[auto_criterias_group, auto_criterias_choices])
+        manual_add_criteria_textbox.submit(manually_add_criteria, inputs=[manual_add_criteria_textbox, manual_criterias_group, manual_criterias_choices], outputs=[manual_add_criteria_textbox,manual_criterias_group, manual_criterias_choices])
+        manual_delete_criteria_button.click(manual_delete_criteria, inputs=[manual_criterias_group, manual_criterias_choices], outputs=[manual_criterias_group, manual_criterias_choices])
 
-        ### SUMMARY TAB EVENTS
-        def summarize_assignment(file_path):
-            documents = actions.get_doc_splits(file_path)
-            summary = actions.summarize_documents(documents, chatLLM)
-            return summary
         
-        assignment_summary_button.click(summarize_assignment, inputs=[docs_file_explorer], outputs=[assignment_summary])
 
         ### MARKING TAB EVENTS
-        def assess_assignment(method, auto_criteria, manual_criteria, chosen_file):
+        def assess_assignment(method, auto_criteria, manual_criteria, chosen_file, mode, model):
+            if (not chosen_file) or len(chosen_file) == 0:
+                return "", mode, model
+            llm = get_llm(mode, model)
             if method == "Auto":
                 criterias = auto_criteria
             else:
@@ -486,19 +597,82 @@ def build_page() -> gr.Blocks:
 
             criteria = ""
             for i in range(len(criterias)):
-                criteria += str(i+1) + ". " + criterias[i] + "\n"
-            result = actions.get_feedback(criteria, chosen_file, chatLLM)
-            return result
+                criteria += str(i+1) + ") " + criterias[i] + "\n"
+            
+            result = actions.get_feedback(criteria, chosen_file[0], llm)
+            return result, mode, model
 
         def preview_assignment(file_path, current_text):
-            if type(file_path) == str:
-                text = actions.get_text_from_file(file_path)
+            if type(file_path) == list and len(file_path) >0 and type(file_path[0]) == str:
+                text = actions.get_text_from_file(file_path[0])
                 return [(text, None)]
             else:
-                return [(current_text, None)]
+                return current_text
 
-        marking_button.click(assess_assignment, inputs=[criteria_method, auto_criterias_group, manual_criterias_group, docs_file_explorer], outputs=[marking_output])
+        def preview_feedback(file_path, current_text):
+            print(file_path)
+            if type(file_path) == list and len(file_path) >0 and type(file_path[0]) == str:
+                print("isfile")
+                text = actions.get_text_from_file(file_path[0])
+                return gr.HighlightedText(
+                    value=[(text, None)],
+                    label="Document Preview",
+                    interactive=False,
+                    scale=10,
+                    elem_classes=["preview"])
+            return gr.HighlightedText(
+                    value=current_text,
+                    label="Document Preview",
+                    interactive=False,
+                    scale=10,
+                    elem_classes=["preview"]
+                )
+        
+        def feedback_all_files(method, auto_criteria, manual_criteria, files, mode, model):
+            llm = get_llm(mode, model)
+            if method == "Auto":
+                criterias = auto_criteria
+            else:
+                criterias = manual_criteria
+
+            actions.create_all_feedback(criterias, files, llm)
+            return gr.FileExplorer(root_dir=temp_path, interactive=False)
+
+        def reset_feedback_explorer():
+            return gr.FileExplorer(
+                root_dir=feedback_path,
+                interactive=True,
+                label="Feedback Files",
+                file_count='multiple',
+                scale=2,
+                height="30vh",
+                ignore_glob="*.gitkeep",
+                value=[]
+            )
+            
+
+        def delete_feedback(files):
+            if files:
+                for file in files:
+                    os.remove(file)
+            return gr.FileExplorer(
+                root_dir=temp_path,
+            )
+
+        marking_button.click(assess_assignment, inputs=[criteria_method, auto_criterias_group, manual_criterias_group, docs_file_explorer, feedback_llm_dropdown, feedback_nim_dropdown], outputs=[marking_output, feedback_llm_dropdown, feedback_nim_dropdown])
         docs_preview_button.click(preview_assignment, inputs=[docs_file_explorer, preview_window], outputs=[preview_window])
+        feedback_all_button.click(feedback_all_files, inputs=[criteria_method, auto_criterias_group, manual_criterias_group, docs_file_explorer, feedback_llm_dropdown, feedback_nim_dropdown], outputs=[feedback_explorer]).then(reset_feedback_explorer, inputs=[], outputs=[feedback_explorer])
+        feedback_preview_button.click(preview_feedback, inputs=[feedback_explorer, preview_window], outputs=[preview_window])
+        feedback_delete_button.click(delete_feedback, inputs=[feedback_explorer], outputs=[feedback_explorer]).then(reset_feedback_explorer, inputs=[], outputs=[feedback_explorer]).then(reset_feedback_explorer, inputs=[], outputs=[feedback_explorer])
+
+        ### SUMMARY TAB EVENTS
+        def summarize_assignment(file_path, mode, model):
+            llm = get_llm(mode, model)
+            documents = actions.get_doc_splits(file_path)
+            summary = actions.summarize_documents(documents, llm)
+            return summary, mode, model
+        
+        assignment_summary_button.click(summarize_assignment, inputs=[summary_explorer, summary_llm_dropdown, summary_nim_dropdown], outputs=[assignment_summary, summary_llm_dropdown, summary_nim_dropdown])
 
         ### EMAIL TAB EVENTS
         def infer_email(text):

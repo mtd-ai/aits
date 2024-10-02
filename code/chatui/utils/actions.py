@@ -13,8 +13,11 @@ from chatui.prompts import prompts_common, prompts_phi3
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains.combine_documents.refine import RefineDocumentsChain
 from langchain.chains.llm import LLMChain
+import os
 
-from langchain.schema import Document
+root = os.path.join(os.path.dirname(__file__), "../../../")
+feedback_path = os.path.join(root, "files", "feedback")
+
     
 
 def infer_email_chain(llm):
@@ -40,9 +43,13 @@ def retrieve_requirements():
 
 def extract_requirements(documents, llm):
     content = [doc.page_content for doc in documents]
+    if len(content) == 1:
+        pr = prompts_phi3.extract_requirements_prompt
+    else:
+        pr = prompts_phi3.extract_requirements_prompt_multiple
     documents = " ".join(content)
     prompt = PromptTemplate(
-        template=prompts_phi3.extract_requirements_prompt,
+        template=pr,
         input_variables=["documents"],
     )
     chain = prompt | llm | JsonOutputParser()
@@ -87,6 +94,7 @@ def summarize_documents(documents, llm):
         initial_response_name=initial_response_name,
         input_key="page_content",
     )
+
     response = chain.invoke({"page_content": documents})
 
     print("summary", response)
@@ -121,6 +129,35 @@ def get_feedback(criteria, file_path, llm):
     response = chain.invoke({"criteria": criteria, "document": documents})
     return response
 
+def get_feedback2(criteria, file_path, llm):
+    database.upload_assignment(file_path)
+    assignment_retriever = database.get_assignment_retriever()
+    documents = assignment_retriever.invoke(criteria)
+    text = [doc.page_content for doc in documents]
+    documents = " ".join(text)
+    print('documents:', documents)
+    prompt = PromptTemplate(
+        template=prompts_phi3.feedback_prompt,
+        input_variables=["criteria", "document"],
+    )
+    chain = prompt | llm | StrOutputParser()
+    response = chain.invoke({"criteria": criteria, "document": documents})
+    return response
+
+def create_feedback(criteria, file_path, llm):
+    response = get_feedback2(criteria, file_path, llm)
+    file_name = os.path.basename(file_path).split('/')[-1]
+    txt_file = file_name.split('.')[0] + ".txt"
+
+    with open(os.path.join(feedback_path, txt_file), "w") as f:
+        f.write(response)
+
+def create_all_feedback(criterias, file_paths, llm):
+    criteria = ""
+    for i in range(len(criterias)):
+        criteria += str(i+1) + ") " + criterias[i] + "\n"
+    for file_path in file_paths:
+        create_feedback(criteria, file_path, llm)
 
 def get_text_from_file(file_path):
     if file_path.endswith(".pdf"):
@@ -131,6 +168,8 @@ def get_text_from_file(file_path):
     elif file_path.endswith(".txt"):
         doc = [item.page_content for item in TextLoader(file_path).load()]
         doc = "\n".join(doc)
+
+    print(doc)
     return doc
 
 

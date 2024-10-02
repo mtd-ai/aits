@@ -23,7 +23,7 @@ temp_path = os.path.join(root, "files", "temp")
 feedback_path = os.path.join(root, "files", "feedback")
 #models_path = os.path.join(root, "models")
 
-models_path = "/"
+models_path = "/Phi-3-mini-4k-instruct"
 
 css = """
     .preview {height: 45vh !important; overflow-y: scroll !important};

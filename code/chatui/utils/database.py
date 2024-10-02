@@ -2,13 +2,12 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import UnstructuredWordDocumentLoader, PyPDFLoader, TextLoader
 from langchain_chroma import Chroma
 from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List
 from langchain_huggingface import HuggingFaceEmbeddings
 import os
 
 cur = os.path.dirname(__file__)
 root = os.path.join(cur, "../../../")
-model_path = os.path.join(root, "models/phi-2")
 data_path = os.path.join(root, "data")
 
 ######## HANDLE REQUIREMENT FILES ########
@@ -63,7 +62,7 @@ def upload_files(files: List[str]):
     vectorstore = Chroma.from_documents(
         documents=all_splits,
         collection_name="rag-chroma",
-        embedding=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={'device': 'mps'}, encode_kwargs={'device': 'mps'}),
+        embedding=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={'device': 'cuda'}, encode_kwargs={'device': 'cuda'}),
         persist_directory=data_path,
     )
     return vectorstore
@@ -72,7 +71,7 @@ def clear():
     """ This is a helper function for emptying the collection the vector store. """
     vectorstore = Chroma(
         collection_name="rag-chroma",
-        embedding_function=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={'device': 'mps'}, encode_kwargs={'device': 'mps'}),
+        embedding_function=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={'device': 'cuda'}, encode_kwargs={'device': 'cuda'}),
         persist_directory=data_path,
     )
     
@@ -83,7 +82,7 @@ def get_retriever():
     """ This is a helper function for returning the retriever object of the vector store. """
     vectorstore = Chroma(
         collection_name="rag-chroma",
-        embedding_function=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={'device': 'mps'}, encode_kwargs={'device': 'mps'}),
+        embedding_function=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={'device': 'cuda'}, encode_kwargs={'device': 'cuda'}),
         persist_directory=data_path,
     )
     retriever = vectorstore.as_retriever()
@@ -105,7 +104,7 @@ def upload_assignment(file_path):
     documents = text_splitter.split_documents(doc)
     vectorstore = Chroma(
         collection_name="assignment-rag-chroma",
-        embedding_function=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={'device': 'mps'}, encode_kwargs={'device': 'mps'}),
+        embedding_function=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={'device': 'cuda'}, encode_kwargs={'device': 'cuda'}),
         persist_directory=data_path,
     )
 
@@ -114,7 +113,7 @@ def upload_assignment(file_path):
     vectorstore = Chroma.from_documents(
         documents=documents,
         collection_name="assignment-rag-chroma",
-        embedding=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={'device': 'mps'}, encode_kwargs={'device': 'mps'}),
+        embedding=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={'device': 'cuda'}, encode_kwargs={'device': 'cuda'}),
         persist_directory=data_path,
     )
 
@@ -123,7 +122,7 @@ def upload_assignment(file_path):
 def get_assignment_retriever():
     vectorstore = Chroma(
         collection_name="assignment-rag-chroma",
-        embedding_function=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={'device': 'mps'}, encode_kwargs={'device': 'mps'}),
+        embedding_function=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={'device': 'cuda'}, encode_kwargs={'device': 'cuda'}),
         persist_directory=data_path,
     )
     retriever = vectorstore.as_retriever()
@@ -140,7 +139,7 @@ def read_emails(text):
     vectorstore = Chroma.from_documents(
         documents=documents,
         collection_name="email-rag-chroma",
-        embedding=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={'device': 'mps'}, encode_kwargs={'device': 'mps'}),
+        embedding=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={'device': 'cuda'}, encode_kwargs={'device': 'cuda'}),
         persist_directory=data_path,
     )
     return vectorstore
